@@ -1,0 +1,218 @@
+#!/usr/bin/env python
+
+"""
+This module simplifies management of a tmBundle's menu entries.
+"""
+
+import os
+import sys
+import re
+import json
+import uuid
+try:
+    import biplist as plistlib
+except:
+    import plistlib
+
+class Commands(object):
+    """docstring for Commands"""
+    def __init__(self, bundle_dir):
+        super(Commands, self).__init__()
+        self.bundle_dir = bundle_dir
+        self._gen_mappings()
+
+    def _gen_mappings(self):
+        folders = ['Commands', 'Snippets']
+        mapping = {};
+        for folder in folders:
+            cmd_dir = os.path.join(self.bundle_dir, folder)
+            if not os.path.isdir(cmd_dir):
+                continue
+            for cmd in os.listdir(cmd_dir):
+                path = os.path.join(cmd_dir, cmd)
+                try:
+                    pl = plistlib.readPlist(path)
+
+                    uuid = pl.get(u'uuid')
+                    name = pl.get(u'name')
+                    # disabled = pl.get(u'isDisabled', False)
+                    mapping[uuid] = name
+                except:
+                    print "Unexpected error:", sys.exc_info()[0]
+                    print type(path), path
+                    #raise
+
+        self.mapping = mapping
+        self.reverse_mapping = {uuid:cmd for cmd, uuid in mapping.iteritems()}
+
+    @property
+    def menu_items(self):
+        return self.reverse_mapping.keys()
+
+    def uuid_for_menu_item(self, item):
+        return self.reverse_mapping.get(item, item)
+
+    def menu_item_for_uuid(self, _uuid):
+        return self.mapping.get(_uuid)
+
+    def __len__(self):
+        return len(self.mapping)
+
+#
+# Note: If there is a mainMenu it is likely broken
+# TM Silently ignores UUID with no associated command, and
+# adds any (enabled) commands not present in mainMenu at the end
+#
+
+class MenuReader(object):
+    """docstring for MenuManager"""
+    def __init__(self, bundle_dir):
+        super(MenuReader, self).__init__()
+        self.bundle_dir = bundle_dir
+        self._cmds = Commands(bundle_dir)
+        self.seen = []
+        path = os.path.join(self.bundle_dir, 'Info.plist')
+        self.info = plistlib.readPlist(path)
+
+    @property
+    def menuItems(self):
+        return self.info['mainMenu']['items']
+
+    @property
+    def submenus(self):
+        return self.info['mainMenu']['submenus']
+
+    @property
+    def excludedItems(self):
+        return self.info['mainMenu']['excludedItems']
+
+    def title_for_item(self, item):
+        return self._cmds.menu_item_for_uuid(item)
+
+    def submenu_for_item(self, item):
+        try:
+            submenu = self.submenus[item]
+            subentries = submenu.get('items')
+            title = submenu.get('name')
+            return title, subentries
+        except:
+            return item, []
+
+    def validate_item(self, item):
+        is_OK = item in self.menuItems or item in self.submenus
+        if is_OK:
+            self.seen.append(item)
+        return is_OK
+
+    def generate_mdef(self):
+
+        def print_utf8(s=u""):
+            print s.encode('utf-8')
+
+        def print_menu(entries, indent=0):
+            for x in entries:
+                if not self.validate_item(x):
+                    continue
+                if x.startswith('---'):
+                    print_utf8(u"{}{}".format(" "*indent, x))
+                    continue
+                mi = self.title_for_item(x)
+                if mi is not None:
+                    print_utf8(u"{}{}".format(" "*indent, mi))
+                    continue
+                title, subentries = self.submenu_for_item(x)
+                print_utf8(u"{}> {}".format(" "*indent, title))
+                print_menu(subentries, indent+2)
+                print_utf8(u"<")
+
+        print_utf8(u"@{}".format(self.bundle_dir))
+        print_utf8(u"# Don't change the previous line")
+        print_utf8()
+        print_utf8(u"# Rearrange lines below to rearrange menu")
+        print_menu(self.menuItems)
+        print_utf8()
+        # print "# Commands not appearing in menu"
+        # for x in self.excludedItems:
+        #     title = self.title_for_item(x)
+        #     if title:
+        #         print u"! {}".format(title)
+
+
+class MenuWriter(object):
+    """docstring for MenuWriter"""
+    def __init__(self, infile="/dev/stdin"):
+        super(MenuWriter, self).__init__()
+        with open(infile, 'r') as f:
+            text = f.read().decode('utf-8')
+        lines = text.splitlines()
+        first_line = lines.pop(0)
+        bundle_dir = first_line.lstrip('@ ')
+        self._cmds = Commands(bundle_dir)
+        self.mdef = self._parse_mdef(lines)
+
+    def item_for_title(self, title):
+        return self._cmds.uuid_for_menu_item(title)
+
+    def _parse_mdef(self, text):
+        mdef = {
+            'items':[],
+ #           'excludedItems':[],
+            'submenus':{}, # each entry is {'name':'Title', 'items':[...]}
+        }
+        stack = [mdef['items']]
+        for line in text:
+            line = line.strip()
+            if not line:
+                continue
+            elif line.startswith('#'):
+                continue
+            elif line.startswith('@'):
+                continue
+            # elif line.startswith('!'):
+            #     title = line.lstrip('! \t')
+            #     mdef['excludedItems'].append(self.item_for_title(title))
+            elif line.startswith('>'):
+                key = str(uuid.uuid4()).upper()
+                value = {'items':[], 'name':line.lstrip('> \t')}
+                mdef['submenus'][key] = value
+                stack[-1].append(key)
+                stack.append(value['items'])
+            elif line.startswith('<'):
+                stack.pop()
+            elif line.startswith('-'):
+                stack[-1].append(line)
+            else:
+                stack[-1].append(self.item_for_title(line))
+        return mdef
+
+    def _verify(self, mdef):
+        return True
+
+
+
+
+if __name__ == '__main__':
+
+    import sys
+
+    args = sys.argv
+
+    if len(args) is not 3 or args[1] not in ['-r', '-w']:
+        sys.stderr.write('Bad arguments. Nothing written. {} {}'.format(len(args), args))
+        sys.exit(206)
+
+    if args[1] == '-r':
+        mrd = MenuReader(args[2])
+        mrd.generate_mdef()
+    else:
+        mwr = MenuWriter(args[2])
+        print json.dumps(mwr.mdef, indent=4)
+
+#     BUNDLE = '/Users/eperspe/Source/FOSS/TextTasks.tmbundle'
+#     mgr = MenuReader(BUNDLE)
+#     # print json.dumps(mgr._cmds.menu_items, indent=4)
+#     # print json.dumps(mgr._cmds.mapping, indent=4)
+#     mgr.generate_mdef()
+#
+#     mwr = MenuWriter(infile="/Users/eperspe/Source/spikes/Arrange TM bundle menu/test.mdef")
+#     print json.dumps(mwr.mdef, indent=4)
