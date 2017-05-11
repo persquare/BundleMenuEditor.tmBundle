@@ -77,7 +77,6 @@ class MenuReader(object):
         super(MenuReader, self).__init__()
         self.bundle_dir = bundle_dir
         self._cmds = Commands(bundle_dir)
-        self.seen = []
         path = os.path.join(self.bundle_dir, 'Info.plist')
         self.info = plistlib.readPlist(path)
         self.menu = self.info.get('mainMenu', {})
@@ -98,13 +97,10 @@ class MenuReader(object):
         return self._cmds.menu_item_for_uuid(item)
 
     def submenu_for_item(self, item):
-        try:
-            submenu = self.submenus[item]
-            subentries = submenu.get('items')
-            title = submenu.get('name')
-            return title, subentries
-        except:
-            return item, []
+        submenu = self.submenus[item]
+        subentries = submenu.get('items')
+        title = submenu.get('name')
+        return title, subentries
 
     def is_submenu(self, item):
         return item in self.submenus
@@ -120,7 +116,7 @@ class MenuReader(object):
         def print_utf8(s=u""):
             print s.encode('utf-8')
 
-        def print_menu(entries, indent=0):
+        def print_menu(entries, indent=0, prefix=''):
             for x in entries:
                 if x.startswith('---'):
                     print_utf8(u"{}{}".format(" "*indent, x))
@@ -134,19 +130,17 @@ class MenuReader(object):
                 if not self.validate_item(x):
                     continue
                 mi = self.title_for_item(x)
-                print_utf8(u"{}{}".format(" "*indent, mi))
-
+                print_utf8(u"{}{}{}".format(prefix, " "*indent, mi))
+                
+        self.seen = []
         print_utf8(u"@{}".format(self.bundle_dir))
         print_utf8(u"# Don't change the previous line")
-        print_utf8()
         print_utf8(u"# Rearrange lines below to rearrange menu")
         print_menu(self.menuItems)
-        print_utf8()
-        # print "# Commands not appearing in menu"
-        # for x in self.excludedItems:
-        #     title = self.title_for_item(x)
-        #     if title:
-        #         print u"! {}".format(title)
+        # Print the unmanaged but not excluded items
+        unmanaged = (set(self._cmds.menu_uuids) - set(self.excludedItems)) - set(self.seen)
+        print_menu(unmanaged)
+        print_menu(self.excludedItems, indent=1, prefix='!')        
 
 
 class MenuWriter(object):
