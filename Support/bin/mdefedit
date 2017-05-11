@@ -49,6 +49,13 @@ class Commands(object):
     def menu_items(self):
         return self.reverse_mapping.keys()
 
+    @property
+    def menu_uuids(self):
+        return self.mapping.keys()
+
+    def has_uuid(self, _uuid):
+        return _uuid in self.mapping
+
     def uuid_for_menu_item(self, item):
         return self.reverse_mapping.get(item, item)
 
@@ -73,18 +80,19 @@ class MenuReader(object):
         self.seen = []
         path = os.path.join(self.bundle_dir, 'Info.plist')
         self.info = plistlib.readPlist(path)
+        self.menu = self.info.get('mainMenu', {})
 
     @property
     def menuItems(self):
-        return self.info['mainMenu']['items']
+        return self.menu.get('items', [])
 
     @property
     def submenus(self):
-        return self.info['mainMenu']['submenus']
+        return self.menu.get('submenus', {})
 
     @property
     def excludedItems(self):
-        return self.info['mainMenu']['excludedItems']
+        return self.menu.get('excludedItems', [])
 
     def title_for_item(self, item):
         return self._cmds.menu_item_for_uuid(item)
@@ -98,8 +106,11 @@ class MenuReader(object):
         except:
             return item, []
 
+    def is_submenu(self, item):
+        return item in self.submenus
+
     def validate_item(self, item):
-        is_OK = item in self.menuItems or item in self.submenus
+        is_OK = self._cmds.has_uuid(item)
         if is_OK:
             self.seen.append(item)
         return is_OK
@@ -111,19 +122,19 @@ class MenuReader(object):
 
         def print_menu(entries, indent=0):
             for x in entries:
-                if not self.validate_item(x):
-                    continue
                 if x.startswith('---'):
                     print_utf8(u"{}{}".format(" "*indent, x))
                     continue
-                mi = self.title_for_item(x)
-                if mi is not None:
-                    print_utf8(u"{}{}".format(" "*indent, mi))
+                if self.is_submenu(x):
+                    title, subentries = self.submenu_for_item(x)
+                    print_utf8(u"{}> {}".format(" "*indent, title))
+                    print_menu(subentries, indent+2)
+                    print_utf8(u"<")
                     continue
-                title, subentries = self.submenu_for_item(x)
-                print_utf8(u"{}> {}".format(" "*indent, title))
-                print_menu(subentries, indent+2)
-                print_utf8(u"<")
+                if not self.validate_item(x):
+                    continue
+                mi = self.title_for_item(x)
+                print_utf8(u"{}{}".format(" "*indent, mi))
 
         print_utf8(u"@{}".format(self.bundle_dir))
         print_utf8(u"# Don't change the previous line")
