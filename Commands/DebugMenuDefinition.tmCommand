@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>command</key>
+	<string>#!/usr/bin/env sh
+
+# Debug menu definition.
+
+[[ -f "${TM_SUPPORT_PATH}/lib/bash_init.sh" ]] &amp;&amp; . "${TM_SUPPORT_PATH}/lib/bash_init.sh"
+
+. "${TM_SUPPORT_PATH}/lib/html.sh"
+. "${TM_SUPPORT_PATH}/lib/webpreview.sh"
+
+# Prepare output window.
+html_header "Debug menu definition" "${TM_VIRTUALENV}"
+echo "&lt;pre&gt;"
+
+mdefedit -d "/dev/stdin"
+
+echo "&lt;/pre&gt;"
+html_footer
+
+</string>
+	<key>input</key>
+	<string>document</string>
+	<key>name</key>
+	<string>Debug Menu Definition</string>
+	<key>outputFormat</key>
+	<string>html</string>
+	<key>outputLocation</key>
+	<string>newWindow</string>
+	<key>uuid</key>
+	<string>31E0AF95-1AEB-4A5F-855C-57B804F6FF69</string>
+</dict>
+</plist>
