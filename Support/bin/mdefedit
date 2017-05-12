@@ -182,8 +182,6 @@ class MenuWriter(object):
                 continue
             elif line.startswith(COMMENT):
                 continue
-            elif line.startswith(PATH):
-                continue
             elif line.startswith(EXCLUDE):
                 title = line.lstrip(EXCLUDE+' \t')
                 mi = self.item_for_title(title)
