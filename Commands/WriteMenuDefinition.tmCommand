@@ -15,11 +15,19 @@ mdefedit -w "/dev/stdin"
 </string>
 	<key>input</key>
 	<string>document</string>
+	<key>inputFormat</key>
+	<string>text</string>
 	<key>name</key>
 	<string>Write Menu Definition</string>
+	<key>outputCaret</key>
+	<string>afterOutput</string>
+	<key>outputFormat</key>
+	<string>text</string>
 	<key>outputLocation</key>
-	<string>newWindow</string>
+	<string>discard</string>
 	<key>uuid</key>
 	<string>854377F8-ADB0-42FE-963B-17B02297892F</string>
+	<key>version</key>
+	<integer>2</integer>
 </dict>
 </plist>
