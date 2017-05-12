@@ -191,8 +191,8 @@ class MenuWriter(object):
                 stack.append(value['items'])
             elif line.startswith('<'):
                 stack.pop()
-            elif line.startswith('-'):
-                stack[-1].append(line)
+            elif line.startswith('----'):
+                stack[-1].append('------------------------------------')
             else:
                 mi = self.item_for_title(line)
                 if mi:
