@@ -151,8 +151,8 @@ class MenuWriter(object):
             text = f.read().decode('utf-8')
         lines = text.splitlines()
         first_line = lines.pop(0)
-        bundle_dir = first_line.lstrip('@ ')
-        self._cmds = Commands(bundle_dir)
+        self.bundle_dir = first_line.lstrip('@ ')
+        self._cmds = Commands(self.bundle_dir)
         self.mdef = self._parse_mdef(lines)
 
     def item_for_title(self, title):
@@ -200,6 +200,12 @@ class MenuWriter(object):
                     # FIXME: Warning
                     pass
         return mdef
+        
+    def write_plist(self):
+        path = os.path.join(self.bundle_dir, 'Info.plist')
+        info = plistlib.readPlist(path)
+        info['mainMenu'] = self.mdef
+        print json.dumps(info, indent=4)
 
     def _verify(self, mdef):
         return True
@@ -222,13 +228,4 @@ if __name__ == '__main__':
         mrd.generate_mdef()
     else:
         mwr = MenuWriter(args[2])
-        print json.dumps(mwr.mdef, indent=4)
-
-#     BUNDLE = '/Users/eperspe/Source/FOSS/TextTasks.tmbundle'
-#     mgr = MenuReader(BUNDLE)
-#     # print json.dumps(mgr._cmds.menu_items, indent=4)
-#     # print json.dumps(mgr._cmds.mapping, indent=4)
-#     mgr.generate_mdef()
-#
-#     mwr = MenuWriter(infile="/Users/eperspe/Source/spikes/Arrange TM bundle menu/test.mdef")
-#     print json.dumps(mwr.mdef, indent=4)
+        mwr.write_plist()
