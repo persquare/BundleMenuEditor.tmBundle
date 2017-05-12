@@ -181,6 +181,7 @@ class MenuWriter(object):
                     mdef['excludedItems'].append(mi)
                 else:
                     # FIXME: Warning
+                    pass
             elif line.startswith('>'):
                 key = str(uuid.uuid4()).upper()
                 value = {'items':[], 'name':line.lstrip('> \t')}
