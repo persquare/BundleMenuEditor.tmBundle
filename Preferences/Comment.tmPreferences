@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>isDisabled</key>
+	<true/>
+	<key>name</key>
+	<string>Comment</string>
+	<key>settings</key>
+	<dict>
+		<key>shellVariables</key>
+		<array>
+			<dict>
+				<key>name</key>
+				<string>MDEF_COMMENT</string>
+				<key>value</key>
+				<string>%</string>
+			</dict>
+		</array>
+	</dict>
+	<key>uuid</key>
+	<string>A75F3034-A222-47AA-86DB-227516AAD48B</string>
+</dict>
+</plist>

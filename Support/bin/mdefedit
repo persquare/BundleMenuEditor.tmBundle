@@ -16,6 +16,14 @@ try:
 except:
     import plistlib
 
+COMMENT = os.environ.get('MDEF_COMMENT', u'#')
+PATH = os.environ.get('MDEF_PATH', u'@')
+EXCLUDE = os.environ.get('MDEF_EXCLUDE', u'!')
+DIVIDER = os.environ.get('MDEF_DIVIDER', u'----')
+SUBMENU_BEGIN = os.environ.get('MDEF_SUBMENU_BEGIN', u'>')
+SUBMENU_END = os.environ.get('MDEF_SUBMENU_END', u'<')
+PROPER_DIVIDER = u'------------------------------------'
+
 class Commands(object):
     """docstring for Commands"""
     def __init__(self, bundle_dir):
@@ -119,14 +127,14 @@ class MenuReader(object):
 
         def print_menu(entries, indent=0, prefix=''):
             for x in entries:
-                if x.startswith('---'):
+                if x.startswith(PROPER_DIVIDER):
                     print_utf8(u"{}{}".format(" "*indent, x))
                     continue
                 if self.is_submenu(x):
                     title, subentries = self.submenu_for_item(x)
-                    print_utf8(u"{}> {}".format(" "*indent, title))
+                    print_utf8(u"{}{} {}".format(" "*indent, SUBMENU_BEGIN, title))
                     print_menu(subentries, indent+2)
-                    print_utf8(u"<")
+                    print_utf8(SUBMENU_END)
                     continue
                 if not self.validate_item(x):
                     continue
@@ -135,13 +143,13 @@ class MenuReader(object):
 
         self.seen = []
         print_utf8(u"@{}".format(self.bundle_dir))
-        print_utf8(u"# Don't change the previous line")
-        print_utf8(u"# Rearrange lines below to rearrange menu")
+        print_utf8(u"{} Don't change the previous line".format(COMMENT))
+        print_utf8(u"{} Rearrange lines below to rearrange menu".format(COMMENT))
         print_menu(self.menuItems)
         # Print the unmanaged but not excluded items
         unmanaged = (set(self._cmds.menu_uuids) - set(self.excludedItems)) - set(self.seen)
         print_menu(unmanaged)
-        print_menu(self.excludedItems, indent=1, prefix='!')
+        print_menu(self.excludedItems, indent=1, prefix=EXCLUDE)
 
 
 class MenuWriter(object):
@@ -171,28 +179,28 @@ class MenuWriter(object):
             # FIXME: Warn for trailing whitespace
             if not line.rstrip():
                 continue
-            elif line.startswith('#'):
+            elif line.startswith(COMMENT):
                 continue
-            elif line.startswith('@'):
+            elif line.startswith(PATH):
                 continue
-            elif line.startswith('!'):
-                title = line.lstrip('! \t')
+            elif line.startswith(EXCLUDE):
+                title = line.lstrip(EXCLUDE+' \t')
                 mi = self.item_for_title(title)
                 if mi:
                     mdef['excludedItems'].append(mi)
                 else:
                     # FIXME: Warning
                     pass
-            elif line.startswith('>'):
+            elif line.startswith(SUBMENU_BEGIN):
                 key = str(uuid.uuid4()).upper()
-                value = {'items':[], 'name':line.lstrip('> \t')}
+                value = {'items':[], 'name':line.lstrip(SUBMENU_BEGIN+' \t')}
                 mdef['submenus'][key] = value
                 stack[-1].append(key)
                 stack.append(value['items'])
-            elif line.startswith('<'):
+            elif line.startswith(SUBMENU_END):
                 stack.pop()
-            elif line.startswith('----'):
-                stack[-1].append('------------------------------------')
+            elif line.startswith(DIVIDER):
+                stack[-1].append(PROPER_DIVIDER)
             else:
                 mi = self.item_for_title(line)
                 if mi:
