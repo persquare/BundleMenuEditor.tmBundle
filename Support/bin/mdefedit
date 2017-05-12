@@ -57,7 +57,7 @@ class Commands(object):
         return _uuid in self.mapping
 
     def uuid_for_menu_item(self, item):
-        return self.reverse_mapping.get(item, item)
+        return self.reverse_mapping.get(item)
 
     def menu_item_for_uuid(self, _uuid):
         return self.mapping.get(_uuid)
@@ -161,21 +161,26 @@ class MenuWriter(object):
     def _parse_mdef(self, text):
         mdef = {
             'items':[],
- #           'excludedItems':[],
+            'excludedItems':[],
             'submenus':{}, # each entry is {'name':'Title', 'items':[...]}
         }
         stack = [mdef['items']]
         for line in text:
-            line = line.strip()
-            if not line:
+            line = line.lstrip() # Don't strip right side since Title may have trailing whitespace
+            # FIXME: Warn for trailing whitespace
+            if not line.rstrip():
                 continue
             elif line.startswith('#'):
                 continue
             elif line.startswith('@'):
                 continue
-            # elif line.startswith('!'):
-            #     title = line.lstrip('! \t')
-            #     mdef['excludedItems'].append(self.item_for_title(title))
+            elif line.startswith('!'):
+                title = line.lstrip('! \t')
+                mi = self.item_for_title(line)
+                if mi:
+                    mdef['excludedItems'].append(mi)
+                else:
+                    # FIXME: Warning
             elif line.startswith('>'):
                 key = str(uuid.uuid4()).upper()
                 value = {'items':[], 'name':line.lstrip('> \t')}
@@ -187,7 +192,12 @@ class MenuWriter(object):
             elif line.startswith('-'):
                 stack[-1].append(line)
             else:
-                stack[-1].append(self.item_for_title(line))
+                mi = self.item_for_title(line)
+                if mi:
+                    stack[-1].append(mi)
+                else:
+                    # FIXME: Warning
+                    pass
         return mdef
 
     def _verify(self, mdef):
