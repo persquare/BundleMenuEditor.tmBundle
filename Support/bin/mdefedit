@@ -88,6 +88,7 @@ class MenuReader(object):
         self._cmds = Commands(bundle_dir)
         path = os.path.join(self.bundle_dir, 'Info.plist')
         self.info = plistlib.readPlist(path)
+        # FIXME: Use ordering if it exists and mainMenu doesn't
         self.menu = self.info.get('mainMenu', {})
 
     @property
@@ -216,6 +217,7 @@ class MenuWriter(object):
         shutil.copyfile(path, bup_path)
         info = plistlib.readPlist(path)
         info['mainMenu'] = self.mdef
+        info.pop('ordering', None)
         if debug:
             print json.dumps(info, indent=4)
         else:
