@@ -8,6 +8,22 @@
 	<string>Per Persson</string>
 	<key>description</key>
 	<string>New shiny bundle for X.</string>
+	<key>mainMenu</key>
+	<dict>
+		<key>excludedItems</key>
+		<array>
+		</array>
+		<key>items</key>
+		<array>
+			<string>CAA6DC4E-432C-4DD3-91B7-8962895EFEEC</string>
+			<string>854377F8-ADB0-42FE-963B-17B02297892F</string>
+			<string>------------------------------------</string>
+			<string>31E0AF95-1AEB-4A5F-855C-57B804F6FF69</string>
+		</array>
+		<key>submenus</key>
+		<dict>
+		</dict>
+	</dict>
 	<key>name</key>
 	<string>Bundle Menu Editor</string>
 	<key>uuid</key>
